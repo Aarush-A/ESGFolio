@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESGFolio</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='Landing_page.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Gothic&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <img src="../static/FinalLogo_edited.png" alt="Logo">
+    </div>
+    <div class="buttons">
+      <a href="{{ url_for('login') }}" class="button">Login</a>
+      <a href="{{ url_for('register') }}" class="button">Sign Up</a>
+    </div>
+    <div class="image">
+      <img src="../static/experiment2.jpg" />
+    </div> 
+    <div class="description">
+      <h1><span class="green-text">ESG</span>Folio</h1>
+      <h2>Environmentally Conscious Investing</h2>
+      <h3>ESG stands for Environmental, Social and Governance, and it's a 
+        framework that helps stakeholders understand how an
+        organization manages sustainability risks and opportunities</h3>
+    </div>
+  </div>
+</body>
+</html>

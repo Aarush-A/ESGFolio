@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=League+Gothic&display=swap" rel="stylesheet">
+<head>
+    <title>Stock Results | ESGFolio</title>
+    <style>
+        body {
+            font-family:"League Gothic", sans-serif;
+            background-color:black; /*can only make the background black when the line above the table can have a different color*/
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            background-color: bl;
+            border-radius: 8px;
+            box-shadow: 0 0 10px orange(0, 0, 0, 0.1);
+            padding: 20px;
+            border: 2px solid #53bc4a;
+        }
+
+        h2 {
+            color:#53bc4a;
+            text-align: center;
+            font-size: 40px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            border: 3px solid #53bc4a ;
+        }
+
+        th, td {
+            border: px solid #53bc4a ;
+            padding: 8px;
+            text-align: left;
+            color: white;
+            font-size: 20px ;
+            font-weight: 100;
+        }
+
+        th {
+            background-color: black;
+        }
+
+        tr:nth-child(even) {
+            background-color: black;
+        }
+
+        a {
+            color:black;
+            text-decoration: none;
+            background-color: black;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        a:hover {
+            background-color: yellowgreen;
+        }
+
+        .profile-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #fff;
+            background-color: #53bc4a ;
+            padding: 12px;
+            border-radius: 50px;
+            width: 220px;
+            margin-left: auto;
+            margin-right: auto;
+            border: 2px solid #53bc4a;
+           
+        }
+
+        .profile-link:hover {
+            background-color: black;
+        }
+
+        .search-form {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .search-form input[type="text"] {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid white;
+            margin-right: 5px;
+        }
+
+        .search-form button {
+            padding: 8px 15px;
+            border-radius: 5px;
+            background-color: white;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .search-form button:hover {
+            background-color: #0a1211;
+        }
+        .logo{
+            position: absolute;
+            top: 20px;
+            left: 20px;
+    
+        }
+
+       
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Stock Search Results</h2>
+    <div class="logo">
+        <img src="../static/FinalLogo_edited.png" alt="Logo">
+    </div>
+    
+    <table border="2" id="books-table">
+        <tr>
+            <th>S.No</th>
+            <th>Company</th>
+            <th>Action</th>
+        </tr>
+        {% for company in companies %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ company[0] }}</td>
+                {% if company[1] == "Yes"%}
+                <td class="in-portfolio">
+                    Stock already in portfolio
+                </td>
+                {% else %}
+                <td class ="not-in-portfolio">
+                    <a href="/dashboard/{{company[0]}}/add" style="background-color: #1d2725; color: #fff; padding: 5px 10px; border-radius: 5px; text-decoration: none;">Add to portfolio</a>
+                </td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+    </table>
+
+    <a href="/dashboard" class="profile-link">Return to dashboard</a>
+</div>
+
+</body>
+</html>

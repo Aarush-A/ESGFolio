@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ session['username'] }}'s ESGFolio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='Dashboard.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Gothic&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='FinalLogo_edited.png') }}" alt="Logo">
+        </div>
+        <div class="title">{{ session['username'] }}'s <span class="green-text">ESG</span>Folio</div>
+        <a href="{{ url_for('logout') }}" class="logout">LOGOUT</a>
+    </header>
+    <div class="container">
+        <div class="search-bar">
+            <span>Add New Stock</span>
+            <form action="/search" method="post">
+                <input type="text" name="query" placeholder="SEARCH BAR">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+        <div class="placeholders-container">
+            <div class="placeholder-box" style="{% if totalscore.portfolio_score is not none and totalscore.portfolio_score <= (avgtot[0]/2) %}background-color: red;{% elif totalscore.portfolio_score is not none and totalscore.portfolio_score <= avgtot[0] %}background-color: #FFD700;{% elif totalscore.portfolio_score is not none %}background-color: green;{% endif %}">
+                ESG RATING: {{ (totalscore[3] and maxtot[0]) and ((totalscore[3] / maxtot[0]) * 10) | round(2) or 'N/A' }}
+            </div>
+            <div class="placeholder-box" style="{% if totalscore.e_score is not none and totalscore.e_score <= (avgtot[1]/2) %}background-color: red;{% elif totalscore.e_score is not none and totalscore.e_score <= avgtot[1] %}background-color: #FFD700;{% elif totalscore.e_score is not none %}background-color: green;{% endif %}">
+                Environmental RATING: {{ (totalscore[0] and maxtot[1]) and ((totalscore[0] * 10 / maxtot[1]) | round(2)) or 'N/A' }}
+            </div>
+            <div class="placeholder-box" style="{% if totalscore.s_score is not none and totalscore.s_score <= (avgtot[2]/2) %}background-color: red;{% elif totalscore.s_score is not none and totalscore.s_score <= avgtot[2] %}background-color: #FFD700;{% elif totalscore.s_score is not none %}background-color: green;{% endif %}">
+                Social RATING: {{ (totalscore[1] and maxtot[2]) and ((totalscore[1] * 10 / maxtot[2]) | round(2)) or 'N/A' }}
+            </div>
+            <div class="placeholder-box" style="{% if totalscore.g_score is not none and totalscore.g_score <= (avgtot[3]/2) %}background-color: red;{% elif totalscore.g_score is not none and totalscore.g_score <= avgtot[3] %}background-color: #FFD700;{% elif totalscore.g_score is not none %}background-color: green;{% endif %}">
+                Governmental RATING: {{ (totalscore[2] and maxtot[3]) and ((totalscore[2] * 10 / maxtot[3]) | round(2)) or 'N/A' }}
+            </div>
+        </div>
+        <div class="content">
+            <div class="stock-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Stock Name</th>
+                            <th>Environment Score</th>
+                            <th>Social Score</th>
+                            <th>Governance Score</th>
+                            <th>ESG Rating</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in portfolio %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ stock[1] }}</td>
+                            <td style="{% if stock[2] is not none and stock[2] <= avgs[0] %}background-color: red;{% elif stock[2] is not none and stock[2] <= emed[0] %}background-color: #FFD700;{% elif stock[2] is not none %}background-color: green;{% endif %}">
+                                {{ (stock[2] and max[0]) and ((stock[2] * 10 / max[0]) | round(2)) or 'N/A' }}
+                            </td>
+                            <td style="{% if stock[3] is not none and stock[3] <= avgs[1] %}background-color: red;{% elif stock[3] is not none and stock[3] <= smed[0] %}background-color: #FFD700;{% elif stock[3] is not none %}background-color: green;{% endif %}">
+                                {{ (stock[3] and max[1]) and ((stock[3] * 10 / max[1]) | round(2)) or 'N/A' }}
+                            </td>
+                            <td style="{% if stock[4] is not none and stock[4] <= avgs[2] %}background-color: red;{% elif stock[4] is not none and stock[4] <= gmed[0] %}background-color: #FFD700;{% elif stock[4] is not none %}background-color: green;{% endif %}">
+                                {{ (stock[4] and max[2]) and ((stock[4] * 10 / max[2]) | round(2)) or 'N/A' }}
+                            </td>
+                            <td style="{% if stock[5] is not none and stock[5] <= totav[0] %}background-color: red;{% elif stock[5] is not none and stock[5] <= totmed[0] %}background-color: #FFD700;{% elif stock[5] is not none %}background-color: green;{% endif %}">
+                                {{ (stock[5] and max[3]) and ((stock[5] * 10 / max[3]) | round(2)) or 'N/A' }}
+                            </td>
+                            <td>
+                                <a href="/dashboard/{{ stock[1] }}/delete" style="background-color: #1d2725; color: #fff; padding: 5px 10px; border-radius: 5px; text-decoration: none;">Delete</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="graphs">
+                {% if portfolio %}
+                <div class="graph-placeholder">
+                    <img src="{{ url_for('static', filename='comparison.png') }}" alt="bar">
+                </div>
+                <div class="graph-placeholder-radar">
+                    <img src="{{ url_for('static', filename='radar.png') }}" alt="radar">
+                </div>
+                {% else %}
+                <div class="graph-placeholder">
+                    <img src="{{ url_for('static', filename='images.jpg') }}" alt="bar">
+                </div>
+                <div class="graph-placeholder-radar">
+                    <img src="{{ url_for('static', filename='red.jpg') }}" alt="radar">
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div>
+            <h1>How Are Your Scores Calculated?</h1>
+            <p>The scores each stock in your portfolio has received are scaled down to 10 using percentile methodology in comparison to all the stocks available in our database.</p>
+            <p>The total rating on the top is a percentile scoring against other users on the platform and their respective portfolios.</p>
+            <p>The colour ratings are also based on averages and medians on basis of stock percentiles and portfolio percentiles.</p>
+        </div>
+    </div>
+</body>
+</html>

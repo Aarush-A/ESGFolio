@@ -1,0 +1,80 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: Arial, sans-serif;
+  background-color: #000; /* Entire background to be black */
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
+
+.logo {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.buttons {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+.buttons .button {
+  color: white;
+  background: none;
+  border: 1px solid white;
+  padding: 10px 20px;
+  margin-left: 10px;
+  text-decoration: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: League Gothic, sans-serif;
+  font-size: 30px;
+}
+
+.description {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  color: white;
+  max-width: 55%;
+  padding: 13px;
+  box-sizing:border-box;
+  display: flex;
+  flex-direction: column;
+  font-family: League Gothic, sans-serif;
+  font-size: 29px;
+}
+
+.description h1, .description h2, .description h3 {
+  margin: 0;
+  padding: 1px 0px;
+  white-space: normal;
+  line-height: 1.5;
+  font-weight: lighter;
+}
+.description h3{
+  color: grey;
+}
+
+.image {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+}
+
+.image img {
+  width: 480px; /* Adjust to ensure it covers approximately 1/4th of the webpage */
+  height: 400px;
+}
+.green-text{
+  color: #53bc4a;
+}

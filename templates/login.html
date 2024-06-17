@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | ESGFolio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='login.css') }}">
+    <!-- below is the code for the font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Gothic&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="../static/FinalLogo_edited.png" alt="Logo">
+        </div>
+        <div class="box">
+        <h1>Login</h1>
+        <div style="text-align: center;">
+            {% if message %}
+                <p>{{ message }}</p>
+            {% endif %}
+        </div>
+        <form action="/login" method="POST">
+            <label for="username">Username or Email ID</label>
+            <input type="text" id="username" name="username" required><br><br>
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required><br><br>
+            <input type="submit" value="Login">
+
+            <div class="links">
+        <!-- need to add a form for forgot password -->
+                <br>
+                <a href="{{ url_for('register') }}">Not a member? Sign Up</a>
+            </div>
+         </div>
+     </div>   
+    </body>
+    </html>

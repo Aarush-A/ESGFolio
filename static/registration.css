@@ -1,0 +1,86 @@
+body{
+    background-color: black;
+}
+
+.container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 120vh;
+}
+.logo{
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    
+}
+
+
+.Box{
+    width: 350px;
+    height: 600px;
+    padding: 20px;
+    background-color: black;
+    border-radius: 5px;
+    color: white;
+    border: 2px solid #53bc4a;
+    margin: auto; /*to adjust the positioning of box; */
+    margin-top: 45px; /*distance from the top*/
+}
+.Box h1{
+    text-align: center;
+    font-family:"League Gothic", sans-serif; 
+    color: #53bc4a;
+    font-size: 50px;
+    font-weight: 400px;
+    margin-top: 1px;
+}
+
+
+.Inner-Box{
+    display: flex;
+    flex-direction: column;
+}
+
+.Inner-Box label{
+    margin-bottom:20px;
+    text-align: center;
+    color: E0E4E1;
+    font-family: "League Gothic", sans-serif;
+    font-size: 23px;  
+    
+}
+
+.Inner-Box input{
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 31px;
+    border: solid #53bc4a;
+    width: 77%;
+    margin-left: 30px;
+
+}
+input[type="submit"]{
+    padding: 10px;
+    background-color: #53bc4a;
+    border: solid #53bc4a;
+    color:white;
+    border-radius: 31px;
+    cursor: pointer;
+    width: 77%;
+    margin-top: 20px; 
+    margin-left: 44px;
+    
+    
+}
+input[type="submit"]:hover{
+    background-color: black;
+}
+.login-link{
+    text-align: right; /* Align the link to the left */
+    margin-top: 20px;
+}
+.login-link a {
+    color: #e94f0b; /* Change the color of the link */
+    font-family: "League Gothic", sans-serif; /* Change the font family */
+}

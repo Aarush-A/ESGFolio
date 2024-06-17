@@ -1,0 +1,135 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+header {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative; /* To position the logo and logout */
+    font-family: League Gothic, sans-serif;
+}
+
+.logo {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+
+.logout {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 23px;
+    background-color: black;
+    color: #fff;
+    border: none;
+    cursor:pointer;
+}
+
+
+.title {
+    font-size: 49px;
+    color: white;
+    font-family: League Gothic, sans-serif;
+   
+    
+}
+.title .green-text{
+    color: #53bc4a;
+}
+
+.search-bar {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    font-family: League Gothic, sans-serif;
+}
+
+.search-bar input {
+    width: 300px;
+    padding: 10px;
+    font-size: 19px;
+    font-family: League Gothic, sans-serif;
+}
+
+.search-bar span {
+    margin-left: 10px;
+    font-size: 16px;
+    padding: 10px;
+    background-color:#53bc4a;
+    cursor: pointer;
+}
+
+.content {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    font-family: League Gothic, sans-serif;
+    font-size: 25px;
+    font-weight:lighter;
+    
+}
+
+.stock-table {
+    width: 67%;
+}
+
+.stock-table table {
+    width: 95%;
+    border-collapse: collapse;
+}
+
+.stock-table th, .stock-table td {
+    border: 1px solid #53bc4a;
+    padding: 10px;
+    text-align: left;
+}
+/* Adjust the font weight of table headings */
+.stock-table th {
+    font-weight: 500; /* Normal weight, adjust as needed */
+}
+
+
+.placeholders-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 30%;
+    margin-left: 20px; /* Add margin-left to separate from the table */
+}
+
+.placeholder-box {
+    background-color: #ccc;
+    color:black;
+    width: 100%;
+    padding: 20px;
+    margin-bottom: 35px;
+    text-align: center;
+}
+
+.placeholder-box:last-child {
+    margin-bottom: 0; /* Remove margin-bottom from the last placeholder box */
+}
+
+.graph-placeholder {
+    width: 100%;
+    height: 200px;
+    background-color: #ccc;
+    color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
