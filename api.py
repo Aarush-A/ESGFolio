@@ -86,6 +86,7 @@ class portfolio_api(Resource):
             return '', 409
 
 
+
 class graphs_api(Resource):
     def post(self, username):
         conn = connect()
@@ -108,10 +109,13 @@ class graphs_api(Resource):
                                     INNER JOIN Scores s ON p.company_name = s.Company 
                                     WHERE username=?''', (username,)).fetchone()
         
-
+        conn.close()
+        
         labels = ['Environmental', 'Social', 'Governance']
         avg_scores = [avg[0], avg[1], avg[2]]
         personal_scores = [personal[0], personal[1], personal[2]]
+        
+        matplotlib.use('Agg')
         
         # Bar chart
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -126,14 +130,15 @@ class graphs_api(Resource):
         ax.set_xticklabels(labels)
         ax.legend()
         plt.tight_layout()
+        
         comparison_filename = "comparison.png"
         plt.savefig(os.path.join('static', comparison_filename))
-        plt.close(fig)
+        plt.close(fig)  
         
         # Radar chart
         num_vars = len(labels)
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-        angles += angles[:1]  # Complete the loop
+        angles += angles[:1]  
         
         avg_scores += avg_scores[:1]
         personal_scores += personal_scores[:1]
@@ -148,6 +153,7 @@ class graphs_api(Resource):
         ax.set_xticklabels(labels)
         ax.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
         plt.title('Radar Chart for ESG Scores Comparison')
+        
         radar_filename = "radar.png"
         plt.savefig(os.path.join('static', radar_filename))
-        plt.close(fig)
+        plt.close(fig) 
