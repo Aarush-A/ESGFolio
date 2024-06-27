@@ -181,11 +181,13 @@ def dashboard():
 @app.route('/dashboard/<string:company_name>/delete', methods=['GET'])
 def deletecompany(company_name):
     rq.delete(url=request.url_root + 'api/portfolio/' + session['username'] + '/' + company_name)
+    rq.post(request.url_root+'api/graph/'+session['username'])
     return redirect(url_for('dashboard'))
 
 @app.route('/dashboard/<string:company_name>/add', methods=['POST','GET'])
 def addcompany(company_name):
     rq.post(url=request.url_root + 'api/portfolio/' + session['username'] + '/' + company_name)
+    rq.post(request.url_root+'api/graph/'+session['username'])
     return redirect(url_for('dashboard'))
 
 @app.route('/logout', methods=['POST', 'GET'])

@@ -1,9 +1,12 @@
 from flask import request, jsonify
 from flask_restful import Resource
 import sqlite3
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+
+matplotlib.use('Agg')  # Set the backend before importing pyplot
 
 def connect():
     conn = sqlite3.connect('esgdb.db')
@@ -85,8 +88,6 @@ class portfolio_api(Resource):
             conn.close()
             return '', 409
 
-
-
 class graphs_api(Resource):
     def post(self, username):
         conn = connect()
@@ -109,13 +110,41 @@ class graphs_api(Resource):
                                     INNER JOIN Scores s ON p.company_name = s.Company 
                                     WHERE username=?''', (username,)).fetchone()
         
+        totalscore = conn.execute('''
+        SELECT 
+            ROUND(SUM(s.E_score)/count(*),2) AS e_score,
+            ROUND(SUM(s.S_score)/count(*),2) AS s_score,
+            ROUND(SUM(s.G_score)/count(*),2) AS g_score,
+            ROUND((SUM(s.E_score) + SUM(s.S_score) + SUM(s.G_score))/count(*),2) AS portfolio_score
+        FROM portfolio p 
+        INNER JOIN Scores s ON p.company_name = s.Company 
+        WHERE username=?
+    ''', (username,)).fetchone()
+        
+        maxtot=conn.execute('''
+        SELECT 
+                MAX(tsc) AS max_tsc,
+                MAX(esc) AS max_esc,
+                MAX(ssc) AS max_ssc,
+                MAX(gsc) AS max_gsc
+        FROM (
+            SELECT 
+                    p.username,
+                    AVG(s.e_score) AS esc,
+                    AVG(s.s_score) AS ssc,
+                    AVG(s.g_score) AS gsc,
+                    AVG(s.e_score + s.s_score + s.g_score) AS tsc
+            FROM portfolio p 
+            INNER JOIN Scores s ON p.company_name = s.Company 
+            GROUP BY p.username
+        ) as sub                    
+    ''').fetchone()
+        
         conn.close()
         
         labels = ['Environmental', 'Social', 'Governance']
-        avg_scores = [avg[0], avg[1], avg[2]]
-        personal_scores = [personal[0], personal[1], personal[2]]
-        
-        matplotlib.use('Agg')
+        avg_scores = [(avg[0] * 10 / maxtot[1]), (avg[1] * 10 / maxtot[2]), (avg[2] * 10 / maxtot[3])]
+        personal_scores = [(totalscore[0] * 10 / maxtot[1]), (totalscore[1] * 10 / maxtot[2]), (totalscore[2] * 10 / maxtot[3])]
         
         # Bar chart
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -156,4 +185,4 @@ class graphs_api(Resource):
         
         radar_filename = "radar.png"
         plt.savefig(os.path.join('static', radar_filename))
-        plt.close(fig) 
+        plt.close(fig)
