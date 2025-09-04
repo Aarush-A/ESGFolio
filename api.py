@@ -1,12 +1,6 @@
 from flask import request, jsonify
 from flask_restful import Resource
 import sqlite3
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
-import os
-
-matplotlib.use('Agg')  # Set the backend before importing pyplot
 
 def connect():
     conn = sqlite3.connect('esgdb.db')
@@ -89,10 +83,11 @@ class portfolio_api(Resource):
             return '', 409
 
 class graphs_api(Resource):
-    def post(self, username):
+    def get(self, username):
         conn = connect()
         cursor = conn.cursor()
         
+        # Get average scores across all users
         avg = cursor.execute('''SELECT 
                                 ROUND(AVG(s.E_score), 2),
                                 ROUND(AVG(s.S_score), 2),
@@ -101,15 +96,7 @@ class graphs_api(Resource):
                                FROM portfolio p 
                                INNER JOIN Scores s ON p.company_name = s.Company''').fetchone()
         
-        personal = cursor.execute('''SELECT 
-                                     ROUND(SUM(s.E_score) / COUNT(*), 2) AS e_score,
-                                     ROUND(SUM(s.S_score) / COUNT(*), 2) AS s_score,
-                                     ROUND(SUM(s.G_score) / COUNT(*), 2) AS g_score,
-                                     ROUND((SUM(s.E_score) + SUM(s.S_score) + SUM(s.G_score)) / COUNT(*), 2) AS portfolio_score
-                                    FROM portfolio p 
-                                    INNER JOIN Scores s ON p.company_name = s.Company 
-                                    WHERE username=?''', (username,)).fetchone()
-        
+        # Get personal portfolio scores
         totalscore = conn.execute('''
         SELECT 
             ROUND(SUM(s.E_score)/count(*),2) AS e_score,
@@ -121,6 +108,7 @@ class graphs_api(Resource):
         WHERE username=?
     ''', (username,)).fetchone()
         
+        # Get max scores for normalization
         maxtot=conn.execute('''
         SELECT 
                 MAX(tsc) AS max_tsc,
@@ -140,49 +128,164 @@ class graphs_api(Resource):
         ) as sub                    
     ''').fetchone()
         
+        # Get portfolio distribution data
+        portfolio_dist = cursor.execute('''
+            SELECT 
+                s.Company,
+                s.E_score,
+                s.S_score,
+                s.G_score,
+                (s.E_score + s.S_score + s.G_score) as total_score
+            FROM portfolio p 
+            INNER JOIN Scores s ON p.company_name = s.Company 
+            WHERE p.username = ?
+            ORDER BY total_score DESC
+        ''', (username,)).fetchall()
+        
+        # Get score distribution across all companies
+        score_distribution = cursor.execute('''
+            SELECT 
+                CASE 
+                    WHEN (E_score + S_score + G_score) <= 2 THEN 'Poor (0-2)'
+                    WHEN (E_score + S_score + G_score) <= 4 THEN 'Fair (2-4)'
+                    WHEN (E_score + S_score + G_score) <= 6 THEN 'Good (4-6)'
+                    WHEN (E_score + S_score + G_score) <= 8 THEN 'Very Good (6-8)'
+                    ELSE 'Excellent (8+)'
+                END as score_range,
+                COUNT(*) as count
+            FROM Scores
+            GROUP BY score_range
+            ORDER BY 
+                CASE 
+                    WHEN score_range = 'Poor (0-2)' THEN 1
+                    WHEN score_range = 'Fair (2-4)' THEN 2
+                    WHEN score_range = 'Good (4-6)' THEN 3
+                    WHEN score_range = 'Very Good (6-8)' THEN 4
+                    ELSE 5
+                END
+        ''').fetchall()
+        
         conn.close()
         
+        # Prepare chart data
         labels = ['Environmental', 'Social', 'Governance']
-        avg_scores = [(avg[0] * 10 / maxtot[1]), (avg[1] * 10 / maxtot[2]), (avg[2] * 10 / maxtot[3])]
-        personal_scores = [(totalscore[0] * 10 / maxtot[1]), (totalscore[1] * 10 / maxtot[2]), (totalscore[2] * 10 / maxtot[3])]
         
-        # Bar chart
-        fig, ax = plt.subplots(figsize=(10, 6))
-        x = range(len(labels))
-        bar_width = 0.35
-        ax.bar(x, avg_scores, width=bar_width, label='App Users Average', alpha=0.7)
-        ax.bar([p + bar_width for p in x], personal_scores, width=bar_width, label='Personal Score', alpha=0.7)
-        ax.set_xlabel('ESG Dimensions')
-        ax.set_ylabel('Scores')
-        ax.set_title('Comparison of ESG Scores')
-        ax.set_xticks([p + bar_width / 2 for p in x])
-        ax.set_xticklabels(labels)
-        ax.legend()
-        plt.tight_layout()
+        # Normalize scores to 10-point scale
+        avg_scores = [round((avg[0] * 10 / maxtot[1]) if maxtot[1] > 0 else 0, 2),
+                     round((avg[1] * 10 / maxtot[2]) if maxtot[2] > 0 else 0, 2),
+                     round((avg[2] * 10 / maxtot[3]) if maxtot[3] > 0 else 0, 2)]
         
-        comparison_filename = "comparison.png"
-        plt.savefig(os.path.join('static', comparison_filename))
-        plt.close(fig)  
+        personal_scores = [round((totalscore[0] * 10 / maxtot[1]) if maxtot[1] > 0 else 0, 2),
+                          round((totalscore[1] * 10 / maxtot[2]) if maxtot[2] > 0 else 0, 2),
+                          round((totalscore[2] * 10 / maxtot[3]) if maxtot[3] > 0 else 0, 2)]
         
-        # Radar chart
-        num_vars = len(labels)
-        angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-        angles += angles[:1]  
+        # Prepare portfolio distribution data
+        portfolio_companies = [row[0] for row in portfolio_dist]
+        portfolio_e_scores = [round((row[1] * 10 / maxtot[1]) if maxtot[1] > 0 else 0, 2) for row in portfolio_dist]
+        portfolio_s_scores = [round((row[2] * 10 / maxtot[2]) if maxtot[2] > 0 else 0, 2) for row in portfolio_dist]
+        portfolio_g_scores = [round((row[3] * 10 / maxtot[3]) if maxtot[3] > 0 else 0, 2) for row in portfolio_dist]
         
-        avg_scores += avg_scores[:1]
-        personal_scores += personal_scores[:1]
+        # Prepare score distribution data
+        score_ranges = [row[0] for row in score_distribution]
+        score_counts = [row[1] for row in score_distribution]
         
-        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
-        ax.fill(angles, avg_scores, color='blue', alpha=0.25)
-        ax.fill(angles, personal_scores, color='red', alpha=0.25)
-        ax.plot(angles, avg_scores, color='blue', linewidth=2, label='App Users Average')
-        ax.plot(angles, personal_scores, color='red', linewidth=2, label='Personal Score')
-        ax.set_yticklabels([])
-        ax.set_xticks(angles[:-1])
-        ax.set_xticklabels(labels)
-        ax.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
-        plt.title('Radar Chart for ESG Scores Comparison')
+        chart_data = {
+            'comparison_chart': {
+                'labels': labels,
+                'datasets': [
+                    {
+                        'label': 'App Users Average',
+                        'data': avg_scores,
+                        'backgroundColor': 'rgba(54, 162, 235, 0.7)',
+                        'borderColor': 'rgba(54, 162, 235, 1)',
+                        'borderWidth': 2
+                    },
+                    {
+                        'label': 'Your Portfolio',
+                        'data': personal_scores,
+                        'backgroundColor': 'rgba(255, 99, 132, 0.7)',
+                        'borderColor': 'rgba(255, 99, 132, 1)',
+                        'borderWidth': 2
+                    }
+                ]
+            },
+            'radar_chart': {
+                'labels': labels,
+                'datasets': [
+                    {
+                        'label': 'App Users Average',
+                        'data': avg_scores + [avg_scores[0]],  # Close the radar chart
+                        'backgroundColor': 'rgba(54, 162, 235, 0.2)',
+                        'borderColor': 'rgba(54, 162, 235, 1)',
+                        'borderWidth': 2,
+                        'pointBackgroundColor': 'rgba(54, 162, 235, 1)',
+                        'pointBorderColor': '#fff',
+                        'pointHoverBackgroundColor': '#fff',
+                        'pointHoverBorderColor': 'rgba(54, 162, 235, 1)'
+                    },
+                    {
+                        'label': 'Your Portfolio',
+                        'data': personal_scores + [personal_scores[0]],  # Close the radar chart
+                        'backgroundColor': 'rgba(255, 99, 132, 0.2)',
+                        'borderColor': 'rgba(255, 99, 132, 1)',
+                        'borderWidth': 2,
+                        'pointBackgroundColor': 'rgba(255, 99, 132, 1)',
+                        'pointBorderColor': '#fff',
+                        'pointHoverBackgroundColor': '#fff',
+                        'pointHoverBorderColor': 'rgba(255, 99, 132, 1)'
+                    }
+                ]
+            },
+            'portfolio_distribution': {
+                'labels': portfolio_companies,
+                'datasets': [
+                    {
+                        'label': 'Environmental',
+                        'data': portfolio_e_scores,
+                        'backgroundColor': 'rgba(34, 197, 94, 0.7)',
+                        'borderColor': 'rgba(34, 197, 94, 1)',
+                        'borderWidth': 1
+                    },
+                    {
+                        'label': 'Social',
+                        'data': portfolio_s_scores,
+                        'backgroundColor': 'rgba(59, 130, 246, 0.7)',
+                        'borderColor': 'rgba(59, 130, 246, 1)',
+                        'borderWidth': 1
+                    },
+                    {
+                        'label': 'Governance',
+                        'data': portfolio_g_scores,
+                        'backgroundColor': 'rgba(168, 85, 247, 0.7)',
+                        'borderColor': 'rgba(168, 85, 247, 1)',
+                        'borderWidth': 1
+                    }
+                ]
+            },
+            'score_distribution': {
+                'labels': score_ranges,
+                'datasets': [
+                    {
+                        'label': 'Number of Companies',
+                        'data': score_counts,
+                        'backgroundColor': [
+                            'rgba(239, 68, 68, 0.7)',   # Poor - Red
+                            'rgba(245, 158, 11, 0.7)',  # Fair - Orange
+                            'rgba(59, 130, 246, 0.7)',  # Good - Blue
+                            'rgba(34, 197, 94, 0.7)',   # Very Good - Green
+                            'rgba(16, 185, 129, 0.7)'   # Excellent - Emerald
+                        ],
+                        'borderColor': [
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(245, 158, 11, 1)',
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(34, 197, 94, 1)',
+                            'rgba(16, 185, 129, 1)'
+                        ],
+                        'borderWidth': 2
+                    }
+                ]
+            }
+        }
         
-        radar_filename = "radar.png"
-        plt.savefig(os.path.join('static', radar_filename))
-        plt.close(fig)
+        return jsonify(chart_data)

@@ -78,7 +78,6 @@ def dashboard():
     if 'username' not in session:
         return redirect(url_for('login'))
     username = session['username']
-    rq.post(request.url_root+'api/graph/'+username)
     portfolio_res = rq.get(request.url_root + 'api/portfolio/' + username)
     if portfolio_res.status_code == 200:
         portfolio = portfolio_res.json()
@@ -181,13 +180,11 @@ def dashboard():
 @app.route('/dashboard/<string:company_name>/delete', methods=['GET'])
 def deletecompany(company_name):
     rq.delete(url=request.url_root + 'api/portfolio/' + session['username'] + '/' + company_name)
-    rq.post(request.url_root+'api/graph/'+session['username'])
     return redirect(url_for('dashboard'))
 
 @app.route('/dashboard/<string:company_name>/add', methods=['POST','GET'])
 def addcompany(company_name):
     rq.post(url=request.url_root + 'api/portfolio/' + session['username'] + '/' + company_name)
-    rq.post(request.url_root+'api/graph/'+session['username'])
     return redirect(url_for('dashboard'))
 
 @app.route('/logout', methods=['POST', 'GET'])
