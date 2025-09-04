@@ -17,6 +17,7 @@
         <div class="title">{{ session['username'] }}'s <span class="green-text">ESG</span>Folio</div>
         <a href="{{ url_for('logout') }}" class="logout">LOGOUT</a>
     </header>
+
     <div class="container">
         <div class="search-bar">
             <span>Add New Stock</span>
@@ -25,6 +26,8 @@
                 <button type="submit">Search</button>
             </form>
         </div>
+
+        <!-- Rating placeholders -->
         <div class="placeholders-container">
             <div class="placeholder-box" style="{% if totalscore.portfolio_score is not none and totalscore.portfolio_score <= (avgtot[0]/2) %}background-color: red;{% elif totalscore.portfolio_score is not none and totalscore.portfolio_score <= avgtot[0] %}background-color: #FFD700;{% elif totalscore.portfolio_score is not none %}background-color: green;{% endif %}">
                 ESG RATING: {{ (totalscore[3] and maxtot[0]) and ((totalscore[3] / maxtot[0]) * 10) | round(2) or 'N/A' }}
@@ -39,6 +42,8 @@
                 Governmental RATING: {{ (totalscore[2] and maxtot[3]) and ((totalscore[2] * 10 / maxtot[3]) | round(2)) or 'N/A' }}
             </div>
         </div>
+
+        <!-- Table + Graphs stacked -->
         <div class="content">
             <div class="stock-table">
                 <table>
@@ -58,18 +63,10 @@
                         <tr>
                             <td>{{ loop.index }}</td>
                             <td>{{ stock[1] }}</td>
-                            <td style="{% if stock[2] is not none and stock[2] <= avgs[0] %}background-color: red;{% elif stock[2] is not none and stock[2] <= emed[0] %}background-color: #FFD700;{% elif stock[2] is not none %}background-color: green;{% endif %}">
-                                {{ (stock[2] and max[0]) and ((stock[2] * 10 / max[0]) | round(2)) or 'N/A' }}
-                            </td>
-                            <td style="{% if stock[3] is not none and stock[3] <= avgs[1] %}background-color: red;{% elif stock[3] is not none and stock[3] <= smed[0] %}background-color: #FFD700;{% elif stock[3] is not none %}background-color: green;{% endif %}">
-                                {{ (stock[3] and max[1]) and ((stock[3] * 10 / max[1]) | round(2)) or 'N/A' }}
-                            </td>
-                            <td style="{% if stock[4] is not none and stock[4] <= avgs[2] %}background-color: red;{% elif stock[4] is not none and stock[4] <= gmed[0] %}background-color: #FFD700;{% elif stock[4] is not none %}background-color: green;{% endif %}">
-                                {{ (stock[4] and max[2]) and ((stock[4] * 10 / max[2]) | round(2)) or 'N/A' }}
-                            </td>
-                            <td style="{% if stock[5] is not none and stock[5] <= totav[0] %}background-color: red;{% elif stock[5] is not none and stock[5] <= totmed[0] %}background-color: #FFD700;{% elif stock[5] is not none %}background-color: green;{% endif %}">
-                                {{ (stock[5] and max[3]) and ((stock[5] * 10 / max[3]) | round(2)) or 'N/A' }}
-                            </td>
+                            <td>{{ (stock[2] and max[0]) and ((stock[2] * 10 / max[0]) | round(2)) or 'N/A' }}</td>
+                            <td>{{ (stock[3] and max[1]) and ((stock[3] * 10 / max[1]) | round(2)) or 'N/A' }}</td>
+                            <td>{{ (stock[4] and max[2]) and ((stock[4] * 10 / max[2]) | round(2)) or 'N/A' }}</td>
+                            <td>{{ (stock[5] and max[3]) and ((stock[5] * 10 / max[3]) | round(2)) or 'N/A' }}</td>
                             <td>
                                 <a href="/dashboard/{{ stock[1] }}/delete" style="background-color: #1d2725; color: #fff; padding: 5px 10px; border-radius: 5px; text-decoration: none;">Delete</a>
                             </td>
@@ -78,6 +75,8 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Graphs below table -->
             <div class="graphs">
                 {% if portfolio %}
                 <div class="graph-placeholder">
@@ -96,6 +95,8 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Info Section -->
         <div>
             <h1>How Are Your Scores Calculated?</h1>
             <p>The scores each stock in your portfolio has received are scaled down to 10 using percentile methodology in comparison to all the stocks available in our database.</p>
