@@ -48,16 +48,51 @@ class portfolio_api(Resource):
     def get(self, username):
         conn = connect()
         cursor = conn.cursor()
-        fetch = cursor.execute('''SELECT 
+        
+        # Hardcoded weights for E, S, G scores
+        E_WEIGHT = 0.6714  # Environmental weight
+        S_WEIGHT = 0.2571  # Social weight  
+        G_WEIGHT = 0.0714  # Governance weight
+        
+        # Get min and max values for scaling
+        minmax_values = cursor.execute('''
+            SELECT 
+                MIN(E_score) as min_e, MAX(E_score) as max_e,
+                MIN(S_score) as min_s, MAX(S_score) as max_s,
+                MIN(G_score) as min_g, MAX(G_score) as max_g
+            FROM Scores
+        ''').fetchone()
+        
+        # Min-max scaling function: (value - min) / (max - min) * 10
+        def minmax_scale(value, min_val, max_val):
+            if max_val == min_val:
+                return 5.0  # Return middle value if no range
+            return round(((value - min_val) / (max_val - min_val)) * 10, 2)
+        
+        # Get portfolio data
+        raw_data = cursor.execute('''SELECT 
                                     username,
                                     company_name,
                                     s.E_score AS escore,
                                     s.S_score AS sscore,
-                                    s.G_score AS gscore,
-                                    (s.E_score + s.S_score + s.G_score) AS company_score
+                                    s.G_score AS gscore
                                   FROM portfolio p 
                                   INNER JOIN Scores s ON p.company_name = s.Company 
                                   WHERE username=?''', (username,)).fetchall()
+        
+        # Process data with scaling and weighted ESG calculation
+        processed_data = []
+        for row in raw_data:
+            scaled_e = minmax_scale(row[2], minmax_values[0], minmax_values[1])
+            scaled_s = minmax_scale(row[3], minmax_values[2], minmax_values[3])
+            scaled_g = minmax_scale(row[4], minmax_values[4], minmax_values[5])
+            
+            # Calculate weighted ESG score and scale to 5
+            esg_score = round((scaled_e * E_WEIGHT + scaled_s * S_WEIGHT + scaled_g * G_WEIGHT) * 0.5, 2)
+            
+            processed_data.append((row[0], row[1], row[2], row[3], row[4], esg_score))
+        
+        fetch = processed_data
         conn.close()
         return jsonify(fetch)
     
@@ -87,80 +122,122 @@ class graphs_api(Resource):
         conn = connect()
         cursor = conn.cursor()
         
-        # Get average scores across all users
-        avg = cursor.execute('''SELECT 
-                                ROUND(AVG(s.E_score), 2),
-                                ROUND(AVG(s.S_score), 2),
-                                ROUND(AVG(s.G_score), 2),
-                                ROUND(AVG(s.E_score + s.S_score + s.G_score), 2)
-                               FROM portfolio p 
-                               INNER JOIN Scores s ON p.company_name = s.Company''').fetchone()
+        # Hardcoded weights for E, S, G scores
+        E_WEIGHT = 0.6714  # Environmental weight
+        S_WEIGHT = 0.2571  # Social weight  
+        G_WEIGHT = 0.0714  # Governance weight
         
-        # Get personal portfolio scores
-        totalscore = conn.execute('''
-        SELECT 
-            ROUND(SUM(s.E_score)/count(*),2) AS e_score,
-            ROUND(SUM(s.S_score)/count(*),2) AS s_score,
-            ROUND(SUM(s.G_score)/count(*),2) AS g_score,
-            ROUND((SUM(s.E_score) + SUM(s.S_score) + SUM(s.G_score))/count(*),2) AS portfolio_score
-        FROM portfolio p 
-        INNER JOIN Scores s ON p.company_name = s.Company 
-        WHERE username=?
-    ''', (username,)).fetchone()
-        
-        # Get max scores for normalization
-        maxtot=conn.execute('''
-        SELECT 
-                MAX(tsc) AS max_tsc,
-                MAX(esc) AS max_esc,
-                MAX(ssc) AS max_ssc,
-                MAX(gsc) AS max_gsc
-        FROM (
+        # Get min and max values for scaling
+        minmax_values = cursor.execute('''
             SELECT 
-                    p.username,
-                    AVG(s.e_score) AS esc,
-                    AVG(s.s_score) AS ssc,
-                    AVG(s.g_score) AS gsc,
-                    AVG(s.e_score + s.s_score + s.g_score) AS tsc
+                MIN(E_score) as min_e, MAX(E_score) as max_e,
+                MIN(S_score) as min_s, MAX(S_score) as max_s,
+                MIN(G_score) as min_g, MAX(G_score) as max_g
+            FROM Scores
+        ''').fetchone()
+        
+        # Min-max scaling function: (value - min) / (max - min) * 10
+        def minmax_scale(value, min_val, max_val):
+            if max_val == min_val:
+                return 5.0  # Return middle value if no range
+            return round(((value - min_val) / (max_val - min_val)) * 10, 2)
+        
+        # Get raw scores for all portfolios
+        all_scores = cursor.execute('''
+            SELECT s.E_score, s.S_score, s.G_score
+            FROM portfolio p 
+            INNER JOIN Scores s ON p.company_name = s.Company
+        ''').fetchall()
+        
+        # Get personal portfolio raw scores
+        personal_scores_raw = cursor.execute('''
+            SELECT s.E_score, s.S_score, s.G_score
             FROM portfolio p 
             INNER JOIN Scores s ON p.company_name = s.Company 
-            GROUP BY p.username
-        ) as sub                    
-    ''').fetchone()
+            WHERE username=?
+        ''', (username,)).fetchall()
+        
+        # Calculate scaled and weighted scores for all portfolios
+        all_scaled_scores = []
+        for row in all_scores:
+            scaled_e = minmax_scale(row[0], minmax_values[0], minmax_values[1])
+            scaled_s = minmax_scale(row[1], minmax_values[2], minmax_values[3])
+            scaled_g = minmax_scale(row[2], minmax_values[4], minmax_values[5])
+            esg_score = (scaled_e * E_WEIGHT + scaled_s * S_WEIGHT + scaled_g * G_WEIGHT) * 0.5
+            all_scaled_scores.append((scaled_e, scaled_s, scaled_g, esg_score))
+        
+        # Calculate scaled and weighted scores for personal portfolio
+        personal_scaled_scores = []
+        for row in personal_scores_raw:
+            scaled_e = minmax_scale(row[0], minmax_values[0], minmax_values[1])
+            scaled_s = minmax_scale(row[1], minmax_values[2], minmax_values[3])
+            scaled_g = minmax_scale(row[2], minmax_values[4], minmax_values[5])
+            esg_score = (scaled_e * E_WEIGHT + scaled_s * S_WEIGHT + scaled_g * G_WEIGHT) * 0.5
+            personal_scaled_scores.append((scaled_e, scaled_s, scaled_g, esg_score))
+        
+        # Calculate averages
+        if all_scaled_scores:
+            avg_e = sum(score[0] for score in all_scaled_scores) / len(all_scaled_scores)
+            avg_s = sum(score[1] for score in all_scaled_scores) / len(all_scaled_scores)
+            avg_g = sum(score[2] for score in all_scaled_scores) / len(all_scaled_scores)
+            avg_esg = sum(score[3] for score in all_scaled_scores) / len(all_scaled_scores)
+        else:
+            avg_e = avg_s = avg_g = avg_esg = 0
+        
+        if personal_scaled_scores:
+            personal_e = sum(score[0] for score in personal_scaled_scores) / len(personal_scaled_scores)
+            personal_s = sum(score[1] for score in personal_scaled_scores) / len(personal_scaled_scores)
+            personal_g = sum(score[2] for score in personal_scaled_scores) / len(personal_scaled_scores)
+            personal_esg = sum(score[3] for score in personal_scaled_scores) / len(personal_scaled_scores)
+        else:
+            personal_e = personal_s = personal_g = personal_esg = 0
         
         # Get portfolio distribution data
         portfolio_dist = cursor.execute('''
-            SELECT 
-                s.Company,
-                s.E_score,
-                s.S_score,
-                s.G_score,
-                (s.E_score + s.S_score + s.G_score) as total_score
+            SELECT s.Company, s.E_score, s.S_score, s.G_score
             FROM portfolio p 
             INNER JOIN Scores s ON p.company_name = s.Company 
             WHERE p.username = ?
-            ORDER BY total_score DESC
         ''', (username,)).fetchall()
         
-        # Get score distribution across all companies
+        # Process portfolio distribution with scaling
+        portfolio_companies = []
+        portfolio_e_scores = []
+        portfolio_s_scores = []
+        portfolio_g_scores = []
+        portfolio_esg_scores = []
+        
+        for row in portfolio_dist:
+            scaled_e = minmax_scale(row[1], minmax_values[0], minmax_values[1])
+            scaled_s = minmax_scale(row[2], minmax_values[2], minmax_values[3])
+            scaled_g = minmax_scale(row[3], minmax_values[4], minmax_values[5])
+            esg_score = (scaled_e * E_WEIGHT + scaled_s * S_WEIGHT + scaled_g * G_WEIGHT) * 0.5
+            
+            portfolio_companies.append(row[0])
+            portfolio_e_scores.append(round(scaled_e, 2))
+            portfolio_s_scores.append(round(scaled_s, 2))
+            portfolio_g_scores.append(round(scaled_g, 2))
+            portfolio_esg_scores.append(round(esg_score, 2))
+        
+        # Get score distribution across all companies (based on ESG scores out of 5)
         score_distribution = cursor.execute('''
             SELECT 
                 CASE 
-                    WHEN (E_score + S_score + G_score) <= 2 THEN 'Poor (0-2)'
-                    WHEN (E_score + S_score + G_score) <= 4 THEN 'Fair (2-4)'
-                    WHEN (E_score + S_score + G_score) <= 6 THEN 'Good (4-6)'
-                    WHEN (E_score + S_score + G_score) <= 8 THEN 'Very Good (6-8)'
-                    ELSE 'Excellent (8+)'
+                    WHEN (E_score + S_score + G_score) <= 2 THEN 'Poor (0-1)'
+                    WHEN (E_score + S_score + G_score) <= 4 THEN 'Fair (1-2)'
+                    WHEN (E_score + S_score + G_score) <= 6 THEN 'Good (2-3)'
+                    WHEN (E_score + S_score + G_score) <= 8 THEN 'Very Good (3-4)'
+                    ELSE 'Excellent (4-5)'
                 END as score_range,
                 COUNT(*) as count
             FROM Scores
             GROUP BY score_range
             ORDER BY 
                 CASE 
-                    WHEN score_range = 'Poor (0-2)' THEN 1
-                    WHEN score_range = 'Fair (2-4)' THEN 2
-                    WHEN score_range = 'Good (4-6)' THEN 3
-                    WHEN score_range = 'Very Good (6-8)' THEN 4
+                    WHEN score_range = 'Poor (0-1)' THEN 1
+                    WHEN score_range = 'Fair (1-2)' THEN 2
+                    WHEN score_range = 'Good (2-3)' THEN 3
+                    WHEN score_range = 'Very Good (3-4)' THEN 4
                     ELSE 5
                 END
         ''').fetchall()
@@ -170,20 +247,9 @@ class graphs_api(Resource):
         # Prepare chart data
         labels = ['Environmental', 'Social', 'Governance']
         
-        # Normalize scores to 10-point scale
-        avg_scores = [round((avg[0] * 10 / maxtot[1]) if maxtot[1] > 0 else 0, 2),
-                     round((avg[1] * 10 / maxtot[2]) if maxtot[2] > 0 else 0, 2),
-                     round((avg[2] * 10 / maxtot[3]) if maxtot[3] > 0 else 0, 2)]
-        
-        personal_scores = [round((totalscore[0] * 10 / maxtot[1]) if maxtot[1] > 0 else 0, 2),
-                          round((totalscore[1] * 10 / maxtot[2]) if maxtot[2] > 0 else 0, 2),
-                          round((totalscore[2] * 10 / maxtot[3]) if maxtot[3] > 0 else 0, 2)]
-        
-        # Prepare portfolio distribution data
-        portfolio_companies = [row[0] for row in portfolio_dist]
-        portfolio_e_scores = [round((row[1] * 10 / maxtot[1]) if maxtot[1] > 0 else 0, 2) for row in portfolio_dist]
-        portfolio_s_scores = [round((row[2] * 10 / maxtot[2]) if maxtot[2] > 0 else 0, 2) for row in portfolio_dist]
-        portfolio_g_scores = [round((row[3] * 10 / maxtot[3]) if maxtot[3] > 0 else 0, 2) for row in portfolio_dist]
+        # Individual scores (already scaled to 1-10)
+        avg_scores = [round(avg_e, 2), round(avg_s, 2), round(avg_g, 2)]
+        personal_scores = [round(personal_e, 2), round(personal_s, 2), round(personal_g, 2)]
         
         # Prepare score distribution data
         score_ranges = [row[0] for row in score_distribution]
@@ -259,6 +325,37 @@ class graphs_api(Resource):
                         'backgroundColor': 'rgba(168, 85, 247, 0.7)',
                         'borderColor': 'rgba(168, 85, 247, 1)',
                         'borderWidth': 1
+                    }
+                ]
+            },
+            'esg_scores': {
+                'labels': ['ESG Score (out of 5)'],
+                'datasets': [
+                    {
+                        'label': 'App Users Average',
+                        'data': [round(avg_esg, 2)],
+                        'backgroundColor': 'rgba(54, 162, 235, 0.7)',
+                        'borderColor': 'rgba(54, 162, 235, 1)',
+                        'borderWidth': 2
+                    },
+                    {
+                        'label': 'Your Portfolio',
+                        'data': [round(personal_esg, 2)],
+                        'backgroundColor': 'rgba(255, 99, 132, 0.7)',
+                        'borderColor': 'rgba(255, 99, 132, 1)',
+                        'borderWidth': 2
+                    }
+                ]
+            },
+            'portfolio_esg_distribution': {
+                'labels': portfolio_companies,
+                'datasets': [
+                    {
+                        'label': 'ESG Score (out of 5)',
+                        'data': portfolio_esg_scores,
+                        'backgroundColor': 'rgba(16, 185, 129, 0.7)',
+                        'borderColor': 'rgba(16, 185, 129, 1)',
+                        'borderWidth': 2
                     }
                 ]
             },

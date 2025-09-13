@@ -129,13 +129,21 @@
         <tr>
             <th>S.No</th>
             <th>Company</th>
+            <th>E Score</th>
+            <th>S Score</th>
+            <th>G Score</th>
+            <th>ESG Score (out of 5)</th>
             <th>Action</th>
         </tr>
         {% for company in companies %}
             <tr>
                 <td>{{ loop.index }}</td>
                 <td>{{ company[0] }}</td>
-                {% if company[1] == "Yes"%}
+                <td>{{ company[1] }}</td>
+                <td>{{ company[2] }}</td>
+                <td>{{ company[3] }}</td>
+                <td>{{ company[4] }}</td>
+                {% if company[5] == "Yes"%}
                 <td class="in-portfolio">
                     Stock already in portfolio
                 </td>
