@@ -30,21 +30,21 @@
         </div>
         
         <div class="placeholders-container">
-            <div class="placeholder-box" style="{% if totalscore.portfolio_score is not none and totalscore.portfolio_score <= (avgtot[0]/2) %}background-color: #ef4444;{% elif totalscore.portfolio_score is not none and totalscore.portfolio_score <= avgtot[0] %}background-color: #f59e0b;{% elif totalscore.portfolio_score is not none %}background-color: #22c55e;{% endif %}">
+            <div class="placeholder-box" style="{% if totalscore[3] is not none and totalscore[3] <= 1.5 %}background-color: #ef4444;{% elif totalscore[3] is not none and totalscore[3] <= 2.5 %}background-color: #f59e0b;{% elif totalscore[3] is not none %}background-color: #22c55e;{% endif %}">
                 <div class="rating-label">ESG RATING</div>
-                <div class="rating-value">{{ (totalscore[3] and maxtot[0]) and ((totalscore[3] / maxtot[0]) * 10) | round(2) or 'N/A' }}</div>
+                <div class="rating-value">{{ totalscore[3] | round(2) if totalscore[3] is not none else 'N/A' }}/5</div>
             </div>
-            <div class="placeholder-box" style="{% if totalscore.e_score is not none and totalscore.e_score <= (avgtot[1]/2) %}background-color: #ef4444;{% elif totalscore.e_score is not none and totalscore.e_score <= avgtot[1] %}background-color: #f59e0b;{% elif totalscore.e_score is not none %}background-color: #22c55e;{% endif %}">
+            <div class="placeholder-box" style="{% if totalscore[0] is not none and totalscore[0] <= 3 %}background-color: #ef4444;{% elif totalscore[0] is not none and totalscore[0] <= 6 %}background-color: #f59e0b;{% elif totalscore[0] is not none %}background-color: #22c55e;{% endif %}">
                 <div class="rating-label">Environmental</div>
-                <div class="rating-value">{{ (totalscore[0] and maxtot[1]) and ((totalscore[0] * 10 / maxtot[1]) | round(2)) or 'N/A' }}</div>
+                <div class="rating-value">{{ totalscore[0] | round(2) if totalscore[0] is not none else 'N/A' }}/10</div>
             </div>
-            <div class="placeholder-box" style="{% if totalscore.s_score is not none and totalscore.s_score <= (avgtot[2]/2) %}background-color: #ef4444;{% elif totalscore.s_score is not none and totalscore.s_score <= avgtot[1] %}background-color: #f59e0b;{% elif totalscore.s_score is not none %}background-color: #22c55e;{% endif %}">
+            <div class="placeholder-box" style="{% if totalscore[1] is not none and totalscore[1] <= 3 %}background-color: #ef4444;{% elif totalscore[1] is not none and totalscore[1] <= 6 %}background-color: #f59e0b;{% elif totalscore[1] is not none %}background-color: #22c55e;{% endif %}">
                 <div class="rating-label">Social</div>
-                <div class="rating-value">{{ (totalscore[1] and maxtot[2]) and ((totalscore[1] * 10 / maxtot[2]) | round(2)) or 'N/A' }}</div>
+                <div class="rating-value">{{ totalscore[1] | round(2) if totalscore[1] is not none else 'N/A' }}/10</div>
             </div>
-            <div class="placeholder-box" style="{% if totalscore.g_score is not none and totalscore.g_score <= (avgtot[3]/2) %}background-color: #ef4444;{% elif totalscore.g_score is not none and totalscore.g_score <= avgtot[3] %}background-color: #f59e0b;{% elif totalscore.g_score is not none %}background-color: #22c55e;{% endif %}">
+            <div class="placeholder-box" style="{% if totalscore[2] is not none and totalscore[2] <= 3 %}background-color: #ef4444;{% elif totalscore[2] is not none and totalscore[2] <= 6 %}background-color: #f59e0b;{% elif totalscore[2] is not none %}background-color: #22c55e;{% endif %}">
                 <div class="rating-label">Governance</div>
-                <div class="rating-value">{{ (totalscore[2] and maxtot[3]) and ((totalscore[2] * 10 / maxtot[3]) | round(2)) or 'N/A' }}</div>
+                <div class="rating-value">{{ totalscore[2] | round(2) if totalscore[2] is not none else 'N/A' }}/10</div>
             </div>
         </div>
         
@@ -74,17 +74,17 @@
                             <tr class="table-row">
                                 <td>{{ loop.index }}</td>
                                 <td class="company-name">{{ stock[1] }}</td>
-                                <td class="score-cell" style="{% if stock[2] is not none and stock[2] <= avgs[0] %}background-color: #ef4444;{% elif stock[2] is not none and stock[2] <= emed[0] %}background-color: #f59e0b;{% elif stock[2] is not none %}background-color: #22c55e;{% endif %}">
-                                    {{ (stock[2] and max[0]) and ((stock[2] * 10 / max[0]) | round(2)) or 'N/A' }}
+                                <td class="score-cell" style="{% if stock[2] is not none and stock[2] <= 3 %}background-color: #ef4444;{% elif stock[2] is not none and stock[2] <= 6 %}background-color: #f59e0b;{% elif stock[2] is not none %}background-color: #22c55e;{% endif %}">
+                                    {{ stock[2] | round(2) if stock[2] is not none else 'N/A' }}/10
                                 </td>
-                                <td class="score-cell" style="{% if stock[3] is not none and stock[3] <= avgs[1] %}background-color: #ef4444;{% elif stock[3] is not none and stock[3] <= smed[0] %}background-color: #f59e0b;{% elif stock[3] is not none %}background-color: #22c55e;{% endif %}">
-                                    {{ (stock[3] and max[1]) and ((stock[3] * 10 / max[1]) | round(2)) or 'N/A' }}
+                                <td class="score-cell" style="{% if stock[3] is not none and stock[3] <= 3 %}background-color: #ef4444;{% elif stock[3] is not none and stock[3] <= 6 %}background-color: #f59e0b;{% elif stock[3] is not none %}background-color: #22c55e;{% endif %}">
+                                    {{ stock[3] | round(2) if stock[3] is not none else 'N/A' }}/10
                                 </td>
-                                <td class="score-cell" style="{% if stock[4] is not none and stock[4] <= avgs[2] %}background-color: #ef4444;{% elif stock[4] is not none and stock[4] <= gmed[0] %}background-color: #f59e0b;{% elif stock[4] is not none %}background-color: #22c55e;{% endif %}">
-                                    {{ (stock[4] and max[2]) and ((stock[4] * 10 / max[2]) | round(2)) or 'N/A' }}
+                                <td class="score-cell" style="{% if stock[4] is not none and stock[4] <= 3 %}background-color: #ef4444;{% elif stock[4] is not none and stock[4] <= 6 %}background-color: #f59e0b;{% elif stock[4] is not none %}background-color: #22c55e;{% endif %}">
+                                    {{ stock[4] | round(2) if stock[4] is not none else 'N/A' }}/10
                                 </td>
-                                <td class="score-cell" style="{% if stock[5] is not none and stock[5] <= totav[0] %}background-color: #ef4444;{% elif stock[5] is not none and stock[5] <= totmed[0] %}background-color: #f59e0b;{% elif stock[5] is not none %}background-color: #22c55e;{% endif %}">
-                                    {{ (stock[5] and max[3]) and ((stock[5] * 10 / max[3]) | round(2)) or 'N/A' }}
+                                <td class="score-cell" style="{% if stock[5] is not none and stock[5] <= 1.5 %}background-color: #ef4444;{% elif stock[5] is not none and stock[5] <= 2.5 %}background-color: #f59e0b;{% elif stock[5] is not none %}background-color: #22c55e;{% endif %}">
+                                    {{ stock[5] | round(2) if stock[5] is not none else 'N/A' }}/5
                                 </td>
                                 <td>
                                     <a href="/dashboard/{{ stock[1] }}/delete" class="delete-btn">Delete</a>

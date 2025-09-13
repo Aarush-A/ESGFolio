@@ -59,8 +59,33 @@ def search():
     if request.method == 'POST':
         query = request.form['query']
         conn = get_db_connection()
-        companies = conn.execute('''
+        
+        # Hardcoded weights for E, S, G scores
+        E_WEIGHT = 0.6714  # Environmental weight
+        S_WEIGHT = 0.2571  # Social weight  
+        G_WEIGHT = 0.0714  # Governance weight
+        
+        # Get min and max values for scaling
+        minmax_values = conn.execute('''
+            SELECT 
+                MIN(E_score) as min_e, MAX(E_score) as max_e,
+                MIN(S_score) as min_s, MAX(S_score) as max_s,
+                MIN(G_score) as min_g, MAX(G_score) as max_g
+            FROM Scores
+        ''').fetchone()
+        
+        # Min-max scaling function: (value - min) / (max - min) * 10
+        def minmax_scale(value, min_val, max_val):
+            if max_val == min_val:
+                return 5.0  # Return middle value if no range
+            return round(((value - min_val) / (max_val - min_val)) * 10, 2)
+        
+        # Get raw company data
+        raw_companies = conn.execute('''
             SELECT s.Company,
+                s.E_score,
+                s.S_score,
+                s.G_score,
                 CASE 
                     WHEN p.username IS NOT NULL THEN 'Yes'
                     ELSE 'No'
@@ -69,6 +94,22 @@ def search():
             LEFT JOIN portfolio p ON s.Company = p.company_name AND p.username = ?
             WHERE s.Company LIKE ?
         ''', (session['username'],'%' + query + '%',)).fetchall()
+        
+        # Process companies with scaling and weighted ESG calculation
+        companies = []
+        for row in raw_companies:
+            scaled_e = minmax_scale(row[1], minmax_values[0], minmax_values[1])
+            scaled_s = minmax_scale(row[2], minmax_values[2], minmax_values[3])
+            scaled_g = minmax_scale(row[3], minmax_values[4], minmax_values[5])
+            
+            # Calculate weighted ESG score and scale to 5
+            esg_score = round((scaled_e * E_WEIGHT + scaled_s * S_WEIGHT + scaled_g * G_WEIGHT) * 0.5, 2)
+            
+            companies.append((row[0], row[1], row[2], row[3], esg_score, row[4]))
+        
+        # Sort by ESG score descending
+        companies.sort(key=lambda x: x[4], reverse=True)
+        
         conn.close()
         return render_template('search.html', companies=companies)
     return render_template('Dashboard.html')
@@ -84,63 +125,102 @@ def dashboard():
     else:
         portfolio = []
 
+    # Hardcoded weights for E, S, G scores
+    E_WEIGHT = 0.6714  # Environmental weight
+    S_WEIGHT = 0.2571  # Social weight  
+    G_WEIGHT = 0.0714  # Governance weight
+
     conn = get_db_connection()
-    totalscore = conn.execute('''
+    
+    # Get min and max values for scaling
+    minmax_values = conn.execute('''
         SELECT 
-            ROUND(SUM(s.E_score)/count(*),2) AS e_score,
-            ROUND(SUM(s.S_score)/count(*),2) AS s_score,
-            ROUND(SUM(s.G_score)/count(*),2) AS g_score,
-            ROUND((SUM(s.E_score) + SUM(s.S_score) + SUM(s.G_score))/count(*),2) AS portfolio_score
+            MIN(E_score) as min_e, MAX(E_score) as max_e,
+            MIN(S_score) as min_s, MAX(S_score) as max_s,
+            MIN(G_score) as min_g, MAX(G_score) as max_g
+        FROM Scores
+    ''').fetchone()
+    
+    # Min-max scaling function: (value - min) / (max - min) * 10
+    def minmax_scale(value, min_val, max_val):
+        if max_val == min_val:
+            return 5.0  # Return middle value if no range
+        return round(((value - min_val) / (max_val - min_val)) * 10, 2)
+    
+    # Get personal portfolio raw scores
+    personal_scores_raw = conn.execute('''
+        SELECT s.E_score, s.S_score, s.G_score
         FROM portfolio p 
         INNER JOIN Scores s ON p.company_name = s.Company 
         WHERE username=?
-    ''', (username,)).fetchone()
+    ''', (username,)).fetchall()
+    
+    # Calculate scaled and weighted scores for personal portfolio
+    personal_scaled_scores = []
+    for row in personal_scores_raw:
+        scaled_e = minmax_scale(row[0], minmax_values[0], minmax_values[1])
+        scaled_s = minmax_scale(row[1], minmax_values[2], minmax_values[3])
+        scaled_g = minmax_scale(row[2], minmax_values[4], minmax_values[5])
+        esg_score = (scaled_e * E_WEIGHT + scaled_s * S_WEIGHT + scaled_g * G_WEIGHT) * 0.5
+        personal_scaled_scores.append((scaled_e, scaled_s, scaled_g, esg_score))
+    
+    # Calculate personal averages
+    if personal_scaled_scores:
+        personal_e = sum(score[0] for score in personal_scaled_scores) / len(personal_scaled_scores)
+        personal_s = sum(score[1] for score in personal_scaled_scores) / len(personal_scaled_scores)
+        personal_g = sum(score[2] for score in personal_scaled_scores) / len(personal_scaled_scores)
+        personal_esg = sum(score[3] for score in personal_scaled_scores) / len(personal_scaled_scores)
+    else:
+        personal_e = personal_s = personal_g = personal_esg = 0
+    
+    # Create totalscore tuple for compatibility
+    totalscore = (personal_e, personal_s, personal_g, personal_esg)
 
+    # Get basic averages with null handling
     avgs = conn.execute('''
         SELECT 
-            FLOOR(AVG(e_score)),
-            FLOOR(AVG(s_score)),
-            FLOOR(AVG(g_score))
+            COALESCE(FLOOR(AVG(e_score)), 0) as avg_e,
+            COALESCE(FLOOR(AVG(s_score)), 0) as avg_s,
+            COALESCE(FLOOR(AVG(g_score)), 0) as avg_g
         FROM scores
     ''').fetchone()
 
-    emed = conn.execute('SELECT FLOOR(AVG(e_score)) FROM scores WHERE e_score > 0').fetchone()
-    smed = conn.execute('SELECT FLOOR(AVG(s_score)) FROM scores WHERE s_score > 0').fetchone()
-    gmed = conn.execute('SELECT FLOOR(AVG(g_score)) FROM scores WHERE g_score > 0').fetchone()
+    emed = conn.execute('SELECT COALESCE(FLOOR(AVG(e_score)), 0) FROM scores WHERE e_score > 0').fetchone()
+    smed = conn.execute('SELECT COALESCE(FLOOR(AVG(s_score)), 0) FROM scores WHERE s_score > 0').fetchone()
+    gmed = conn.execute('SELECT COALESCE(FLOOR(AVG(g_score)), 0) FROM scores WHERE g_score > 0').fetchone()
 
     totav = conn.execute('''
-        SELECT FLOOR(AVG(rating)) 
+        SELECT COALESCE(FLOOR(AVG(rating)), 0)
         FROM (
-            SELECT s_score + g_score + e_score AS rating 
+            SELECT e_score + s_score + g_score AS rating 
             FROM scores 
-            WHERE s_score + g_score + e_score < 9
+            WHERE e_score + s_score + g_score < 9
         )
     ''').fetchone()
 
     totmed = conn.execute('''
-        SELECT FLOOR(AVG(rating)) 
+        SELECT COALESCE(FLOOR(AVG(rating)), 0)
         FROM (
-            SELECT s_score + g_score + e_score AS rating 
+            SELECT e_score + s_score + g_score AS rating 
             FROM scores
         )
     ''').fetchone()
 
     max_scores = conn.execute('''
         SELECT 
-            MAX(e_score),
-            MAX(s_score),
-            MAX(g_score),
-            MAX(e_score + s_score + g_score)
+            COALESCE(MAX(e_score), 0),
+            COALESCE(MAX(s_score), 0),
+            COALESCE(MAX(g_score), 0),
+            COALESCE(MAX(e_score + s_score + g_score), 0)
         FROM scores
     ''').fetchone()
 
-
     avgtot=conn.execute('''
         SELECT 
-                FLOOR(AVG(tsc)) AS avg_tsc,
-                FLOOR(AVG(esc)) AS avg_esc,
-                FLOOR(AVG(ssc)) AS avg_ssc,
-                FLOOR(AVG(gsc)) AS avg_gsc
+                COALESCE(FLOOR(AVG(tsc)), 0) AS avg_tsc,
+                COALESCE(FLOOR(AVG(esc)), 0) AS avg_esc,
+                COALESCE(FLOOR(AVG(ssc)), 0) AS avg_ssc,
+                COALESCE(FLOOR(AVG(gsc)), 0) AS avg_gsc
         FROM (
             SELECT 
                     p.username,
@@ -156,10 +236,10 @@ def dashboard():
 
     maxtot=conn.execute('''
         SELECT 
-                MAX(tsc) AS max_tsc,
-                MAX(esc) AS max_esc,
-                MAX(ssc) AS max_ssc,
-                MAX(gsc) AS max_gsc
+                COALESCE(MAX(tsc), 0) AS max_tsc,
+                COALESCE(MAX(esc), 0) AS max_esc,
+                COALESCE(MAX(ssc), 0) AS max_ssc,
+                COALESCE(MAX(gsc), 0) AS max_gsc
         FROM (
             SELECT 
                     p.username,
