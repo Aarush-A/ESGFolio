@@ -53,7 +53,6 @@ class portfolio_api(Resource):
         E_WEIGHT = 0.6714  # Environmental weight
         S_WEIGHT = 0.2571  # Social weight  
         G_WEIGHT = 0.0714  # Governance weight
-        
         # Get min and max values for scaling
         minmax_values = cursor.execute('''
             SELECT 
