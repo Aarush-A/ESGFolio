@@ -64,7 +64,6 @@ def search():
         E_WEIGHT = 0.6714  # Environmental weight
         S_WEIGHT = 0.2571  # Social weight  
         G_WEIGHT = 0.0714  # Governance weight
-        
         # Get min and max values for scaling
         minmax_values = conn.execute('''
             SELECT 
@@ -129,7 +128,6 @@ def dashboard():
     E_WEIGHT = 0.6714  # Environmental weight
     S_WEIGHT = 0.2571  # Social weight  
     G_WEIGHT = 0.0714  # Governance weight
-
     conn = get_db_connection()
     
     # Get min and max values for scaling
