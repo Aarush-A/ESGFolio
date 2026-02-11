@@ -1,33 +1,101 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ESGFolio</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='Landing_page.css') }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=League+Gothic&display=swap" rel="stylesheet">
-</head>
-<body>
-  <div class="container">
-    <div class="logo">
-      <img src="../static/FinalLogo_edited.png" alt="Logo">
-    </div>
-    <div class="buttons">
-      <a href="{{ url_for('login') }}" class="button">Login</a>
-      <a href="{{ url_for('register') }}" class="button">Sign Up</a>
-    </div>
-    <div class="image">
-      <img src="../static/experiment2.jpg" />
-    </div> 
-    <div class="description">
-      <h1><span class="green-text">ESG</span>Folio</h1>
-      <h2>Environmentally Conscious Investing</h2>
-      <h3>ESG stands for Environmental, Social and Governance, and it's a 
-        framework that helps stakeholders understand how an
-        organization manages sustainability risks and opportunities</h3>
-    </div>
+{% extends "base.html" %}
+
+{% block title %}ESGFolio - Environmentally Conscious Investing{% endblock %}
+
+{% block content %}
+<style>
+  /* Inline styles specific to landing page to supplement Dashboard.css */
+  .landing-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 40px 0;
+  }
+
+
+
+  .hero-text h1 {
+    font-family: 'League Gothic', sans-serif;
+    font-size: 80px;
+    margin-bottom: 10px;
+    background: linear-gradient(to right, #ffffff, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero-text h2 {
+    font-size: 32px;
+    font-weight: 300;
+    margin-bottom: 20px;
+    color: #22c55e;
+    letter-spacing: 2px;
+  }
+
+  .hero-text h3 {
+    font-size: 18px;
+    font-weight: 300;
+    max-width: 700px;
+    margin: 0 auto 40px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.6;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+
+  .main-btn {
+    padding: 15px 40px;
+    font-size: 18px;
+    font-weight: 600;
+    border-radius: 30px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+  }
+
+  .main-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(34, 197, 94, 0.5);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: white;
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
+  }
+</style>
+
+<div class="landing-container">
+  <div class="hero-text">
+    <h1><span class="green-text">ESG</span>Folio</h1>
+    <h2>Environmentally Conscious Investing</h2>
+    <h3>ESG stands for Environmental, Social, and Governance—a framework that helps stakeholders understand how an
+      organization manages sustainability risks and opportunities.</h3>
   </div>
-</body>
-</html>
+
+  <div class="cta-buttons">
+    <a href="{{ url_for('login') }}" class="main-btn btn-secondary">Login</a>
+    <a href="{{ url_for('register') }}" class="main-btn btn-primary">Sign Up</a>
+  </div>
+
+
+</div>
+{% endblock %}
