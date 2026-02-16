@@ -218,28 +218,44 @@ class graphs_api(Resource):
             portfolio_g_scores.append(round(scaled_g, 2))
             portfolio_esg_scores.append(round(esg_score, 2))
         
-        # Get score distribution across all companies (based on ESG scores out of 5)
-        score_distribution = cursor.execute('''
-            SELECT 
-                CASE 
-                    WHEN (E_score + S_score + G_score) <= 2 THEN 'Poor (0-1)'
-                    WHEN (E_score + S_score + G_score) <= 4 THEN 'Fair (1-2)'
-                    WHEN (E_score + S_score + G_score) <= 6 THEN 'Good (2-3)'
-                    WHEN (E_score + S_score + G_score) <= 8 THEN 'Very Good (3-4)'
-                    ELSE 'Excellent (4-5)'
-                END as score_range,
-                COUNT(*) as count
-            FROM Scores
-            GROUP BY score_range
-            ORDER BY 
-                CASE 
-                    WHEN score_range = 'Poor (0-1)' THEN 1
-                    WHEN score_range = 'Fair (1-2)' THEN 2
-                    WHEN score_range = 'Good (2-3)' THEN 3
-                    WHEN score_range = 'Very Good (3-4)' THEN 4
-                    ELSE 5
-                END
-        ''').fetchall()
+        # Get all raw scores for distribution calculation
+        all_raw_scores = cursor.execute('SELECT E_score, S_score, G_score FROM Scores').fetchall()
+        
+        # Calculate distribution in Python to match the weighting logic
+        distribution_counts = {
+            'Poor (0-2)': 0,
+            'Fair (2-3)': 0,
+            'Good (3-4)': 0,
+            'Very Good (4-4.5)': 0,
+            'Excellent (4.5-5)': 0
+        }
+        
+        for row in all_raw_scores:
+            scaled_e = minmax_scale(row[0], minmax_values[0], minmax_values[1])
+            scaled_s = minmax_scale(row[1], minmax_values[2], minmax_values[3])
+            scaled_g = minmax_scale(row[2], minmax_values[4], minmax_values[5])
+            
+            esg_score = (scaled_e * E_WEIGHT + scaled_s * S_WEIGHT + scaled_g * G_WEIGHT) * 0.5
+            
+            if esg_score < 2.0:
+                distribution_counts['Poor (0-2)'] += 1
+            elif esg_score < 3.0:
+                distribution_counts['Fair (2-3)'] += 1
+            elif esg_score < 4.0:
+                distribution_counts['Good (3-4)'] += 1
+            elif esg_score < 4.5:
+                distribution_counts['Very Good (4-4.5)'] += 1
+            else:
+                distribution_counts['Excellent (4.5-5)'] += 1
+        
+        # Convert to list of tuples for compatibility with existing formatted output structure
+        score_distribution = [
+            ('Poor (0-2)', distribution_counts['Poor (0-2)']),
+            ('Fair (2-3)', distribution_counts['Fair (2-3)']),
+            ('Good (3-4)', distribution_counts['Good (3-4)']),
+            ('Very Good (4-4.5)', distribution_counts['Very Good (4-4.5)']),
+            ('Excellent (4.5-5)', distribution_counts['Excellent (4.5-5)'])
+        ]
         
         conn.close()
         
